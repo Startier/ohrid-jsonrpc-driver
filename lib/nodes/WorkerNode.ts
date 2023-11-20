@@ -1,8 +1,8 @@
 import { Context, Log, Method } from "@startier/ohrid";
-import { Socket, io } from "socket.io-client";
-import { ErrorCodes, RpcClient, RpcError, createError } from "@mojsoski/rpc";
+import { ErrorCodes, RpcClient, RpcError } from "@mojsoski/rpc";
 import { SocketNode, handleSocket } from "../socket";
 import terminationProxy from "../terminationProxy";
+import { ITransport, RemoteSocket } from "../transport";
 
 type WaitHandle = {
   resolve: () => void;
@@ -12,7 +12,7 @@ type WaitHandle = {
 export default class WorkerNode implements SocketNode {
   private client: RpcClient<any> | undefined = undefined;
   private ctx: Context;
-  private socket: Socket | undefined;
+  private socket: RemoteSocket | undefined;
 
   private internalClientResolvers: WaitHandle[] = [];
   private get internalClient() {
@@ -32,7 +32,8 @@ export default class WorkerNode implements SocketNode {
   public constructor(
     private name: string,
     public readonly rpcMethods: Record<string, Method>,
-    public readonly log: Log
+    public readonly log: Log,
+    private readonly transport: ITransport
   ) {
     this.ctx = terminationProxy(this, {
       currentService: this.name,
@@ -57,16 +58,15 @@ export default class WorkerNode implements SocketNode {
   }
 
   public terminate(): void {
-    this.socket?.disconnect();
+    if (this.socket?.disconnect) {
+      this.socket.disconnect();
+    }
   }
 
   public connect(remoteHubAddress: string) {
     this.terminate();
 
-    const socket = io(remoteHubAddress, {
-      autoConnect: true,
-      reconnection: true,
-    });
+    const { socket } = this.transport.connect(remoteHubAddress, this);
     this.socket = socket;
     socket.on("connect", () => {
       this.internalClient = handleSocket(this, socket);

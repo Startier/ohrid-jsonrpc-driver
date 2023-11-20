@@ -1,5 +1,6 @@
 import { Driver, Log, Method, ServiceConfig } from "@startier/ohrid";
 import HubNode from "./nodes/HubNode";
+import { resolveTransport } from "./transport-resolver";
 
 export const createHubNode: Driver["createNode"] = (
   name: string,
@@ -8,8 +9,8 @@ export const createHubNode: Driver["createNode"] = (
   log: Log
 ) => {
   config.settings ??= {};
-
-  const node = new HubNode(name, rpcMethods, log);
+  const transport = resolveTransport(config.settings);
+  const node = new HubNode(name, rpcMethods, log, transport);
 
   const port = process.env.PORT
     ? Number(process.env.PORT)

@@ -1,5 +1,6 @@
 import { Driver, Log, Method, ServiceConfig } from "@startier/ohrid";
 import WorkerNode from "./nodes/WorkerNode";
+import { resolveTransport } from "./transport-resolver";
 
 export const createWorkerNode: Driver["createNode"] = (
   name: string,
@@ -7,7 +8,8 @@ export const createWorkerNode: Driver["createNode"] = (
   rpcMethods: Record<string, Method>,
   log: Log
 ) => {
-  const node = new WorkerNode(name, rpcMethods, log);
+  const transport = resolveTransport(config.settings ?? {});
+  const node = new WorkerNode(name, rpcMethods, log, transport);
   const remoteHubAddress = process.env.REMOTE_HUB
     ? process.env.REMOTE_HUB
     : config.settings && typeof config.settings["remoteHub"] === "string"
