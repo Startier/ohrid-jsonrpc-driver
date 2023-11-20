@@ -1,10 +1,9 @@
 import { Context, Log, Method } from "@startier/ohrid";
-import { Server } from "socket.io";
-import { createServer } from "node:http";
 import { RpcError } from "@mojsoski/rpc";
 import { NodeInterface, SocketNode, createInterface } from "../socket";
 import { Balancer, createBalancer } from "../balancer";
 import terminationProxy from "../terminationProxy";
+import { ITransport, RemoteSocket } from "../transport";
 
 type WaitHandle = {
   resolve: (client: NodeInterface) => void;
@@ -21,7 +20,8 @@ export default class HubNode implements SocketNode {
   public constructor(
     private name: string,
     public readonly rpcMethods: Record<string, Method>,
-    public readonly log: Log
+    public readonly log: Log,
+    private readonly transport: ITransport
   ) {
     this.ctx = terminationProxy(this, {
       currentService: this.name,
@@ -47,20 +47,12 @@ export default class HubNode implements SocketNode {
 
   public listen(port: number): void {
     this.terminate();
-    const httpServer = createServer();
-    const serverSocket = new Server(httpServer);
 
-    this.terminationHandler = () => {
-      serverSocket.close();
-      httpServer.close();
-      httpServer.closeAllConnections();
-    };
+    const { socket: server, stop } = this.transport.listen(port, this);
 
-    httpServer.listen(port, () => {
-      this.log("info", `Hub server is running on port: ${port}`);
-    });
+    this.terminationHandler = stop;
 
-    serverSocket.on("connection", (socket) => {
+    server.on("connection", (socket: RemoteSocket) => {
       let currentInterface: NodeInterface | undefined = undefined;
 
       socket.on("interface", ({ supportedMethods, name }) => {
@@ -69,7 +61,7 @@ export default class HubNode implements SocketNode {
         }
         this.log(
           "debug",
-          `Created interface for '${socket.client.conn.remoteAddress}' (service: ${name}) with ${supportedMethods.length} method(s)`
+          `Created interface for ${name} with ${supportedMethods.length} method(s)`
         );
 
         currentInterface = createInterface(this, {

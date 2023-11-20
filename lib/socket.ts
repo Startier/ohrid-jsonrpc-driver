@@ -6,19 +6,12 @@ import {
   createSubscriber,
 } from "@mojsoski/streams";
 import { RpcClient, client, createClientDriver, server } from "@mojsoski/rpc";
+import { RemoteSocket } from "./transport";
 
 export type NodeInterface = {
   client: RpcClient<any>;
   supportedMethods: string[];
   name: string;
-};
-
-export type RemoteSocket = {
-  emit: (k: string, item: string) => unknown;
-  disconnect?: () => void;
-  close?: () => void;
-  on: (k: string, cb: (data: any) => unknown) => unknown;
-  off: (k: string, cb: (data: any) => unknown) => unknown;
 };
 
 export function createInterface(
