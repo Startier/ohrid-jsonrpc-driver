@@ -1,4 +1,5 @@
-import { Server, createServer } from "http";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import { ITransport, RemoteSocket } from "../transport";
 import { SocketNode } from "../socket";
 import { io } from "socket.io-client";
