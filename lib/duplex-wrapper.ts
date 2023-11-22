@@ -8,10 +8,14 @@ import {
   createSubscriber,
 } from "@mojsoski/streams";
 import { Log } from "@startier/ohrid";
+import { WebSocket } from "ws";
 
-function getReadable(stream: Duplex) {
+function getReadable(stream: Duplex | WebSocket) {
   const readable = createSubject<Buffer>();
-  stream.on("data", (chunk) => readable.notify(Buffer.from(chunk)));
+
+  stream.on(stream instanceof Duplex ? "data" : "message", (chunk) =>
+    readable.notify(Buffer.from(chunk))
+  );
   stream.on("error", () => {
     stream.emit("close");
   });
@@ -19,18 +23,26 @@ function getReadable(stream: Duplex) {
   return readable.subject;
 }
 
-function getWritable(socket: Duplex) {
+function getWritable(socket: Duplex | WebSocket) {
   return createSubscriber<Buffer>({
     end() {
-      socket.end();
+      if (socket instanceof Duplex) {
+        socket.end();
+      } else {
+        socket.close();
+      }
     },
     data(item) {
-      socket.write(item);
+      if (socket instanceof Duplex) {
+        socket.write(item);
+      } else {
+        socket.send(item);
+      }
     },
   });
 }
 
-function duplex(socket: Duplex, log: Log) {
+function duplex(socket: Duplex | WebSocket, log: Log) {
   const responses = createSubject<string>();
   const requests = createSubject<string>();
   const interfaces = createSubject<Omit<RemoteNodeRef, "socket">>();
@@ -40,7 +52,11 @@ function duplex(socket: Duplex, log: Log) {
 
   const handleRawString = createSubscriber<string>({
     end() {
-      socket.end();
+      if (socket instanceof Duplex) {
+        socket.end();
+      } else {
+        socket.close();
+      }
     },
     data(item) {
       switch (item.at(0)) {
@@ -114,6 +130,42 @@ function duplex(socket: Duplex, log: Log) {
       interfaces.close();
     },
   };
+}
+
+export function wrapWebSocket(socket: WebSocket, log: Log): SocketTarget {
+  const connects = createSubject<void>();
+  const disconnects = createSubject<void>();
+  let open = false;
+
+  socket.on("open", () => {
+    open = true;
+    connects.notify();
+  });
+
+  const duplexHandler = duplex(socket, log);
+
+  socket.binaryType = "nodebuffer";
+  socket.on("message", () => {});
+  socket.emit("");
+  const handler = {
+    connects: connects.subject,
+    disconnects: disconnects.subject,
+    ...duplexHandler,
+  };
+
+  socket.on("close", () => {
+    open = false;
+    disconnects.notify();
+    duplexHandler.close();
+  });
+
+  return new SocketTarget({
+    ...handler,
+    close: () => {
+      log("debug", `close() called on stream`);
+      socket.close();
+    },
+  });
 }
 
 export default function wrapSocket(socket: Duplex, log: Log): SocketTarget {

@@ -26,7 +26,9 @@
     "@mojsoski/rpc": "^1.0.0",
     "@mojsoski/streams": "^1.0.1",
     "@startier/ohrid": "^1.0.1",
+    "@types/ws": "^8.5.10",
     "socket.io": "^4.7.2",
-    "socket.io-client": "^4.7.2"
+    "socket.io-client": "^4.7.2",
+    "ws": "^8.14.2"
   }
 }
