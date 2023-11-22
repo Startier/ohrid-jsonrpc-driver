@@ -50,7 +50,10 @@ function connect(address: string, node: SocketNode): { socket: RemoteSocket } {
 
   connection.on("close", () => {
     if (!node.context.exit) {
-      connection.connect(Number(addr.port), addr.hostname);
+      setTimeout(
+        () => connection.connect(Number(addr.port), addr.hostname),
+        500
+      );
     }
   });
   return {
