@@ -1,11 +1,38 @@
-import { SocketNode } from "./socket";
+import { RemoteNodeRef, SocketNode } from "./socket";
 export type RemoteSocket = {
-  emit: (k: string, item: any) => unknown;
+  emit<T extends string>(k: T, item: Emit<T>): void;
   disconnect?: () => void;
   close?: () => void;
-  on: (k: string, cb: (data: any) => unknown) => unknown;
-  off: (k: string, cb: (data: any) => unknown) => unknown;
+  on<T extends string>(k: T, cb: Handler<T>): void;
+  off<T extends string>(k: T, cb: Handler<T>): void;
 };
+
+type EmitInterface<TKey> = TKey extends "interface"
+  ? Omit<RemoteNodeRef, "socket">
+  : never;
+
+type EmitResponse<TKey> = TKey extends "response" ? string : never;
+type EmitRequest<TKey> = TKey extends "request" ? string : never;
+
+export type Emit<TKey extends string> =
+  | EmitInterface<TKey>
+  | EmitResponse<TKey>
+  | EmitRequest<TKey>;
+
+type EmittableHandlers<TKey extends string> = (data: Emit<TKey>) => void;
+
+type ConnectionHandler<TKey> = TKey extends "connection"
+  ? (socket: RemoteSocket) => void
+  : never;
+
+type DisconnectHandler<TKey> = TKey extends "disconnect" ? () => void : never;
+type ConnectHandler<TKey> = TKey extends "connect" ? () => void : never;
+
+export type Handler<TKey extends string> =
+  | EmittableHandlers<TKey>
+  | ConnectionHandler<TKey>
+  | DisconnectHandler<TKey>
+  | ConnectHandler<TKey>;
 
 export interface ITransport {
   connect: (address: string, node: SocketNode) => { socket: RemoteSocket };

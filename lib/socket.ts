@@ -25,7 +25,7 @@ export function createInterface(
   };
 }
 
-type RemoteNodeRef = {
+export type RemoteNodeRef = {
   supportedMethods: string[];
   socket: RemoteSocket;
   name: string;
