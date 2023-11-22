@@ -1,4 +1,4 @@
-import { createServer, createConnection, Server } from "net";
+import { createServer, createConnection, Server, Socket } from "net";
 import { SocketNode } from "../socket";
 import { ITransport, RemoteSocket } from "../transport";
 import ServerTarget, { ServerTargetHandler } from "../targets/ServerTarget";
@@ -8,6 +8,7 @@ import { Log } from "@startier/ohrid";
 
 function wrapServer(server: Server, log: Log): ServerTarget {
   const { subject, notify, close } = createSubject<RemoteSocket>();
+  const clients: Socket[] = [];
   const handler: ServerTargetHandler = {
     close() {
       server.close();
@@ -19,24 +20,22 @@ function wrapServer(server: Server, log: Log): ServerTarget {
       "debug",
       `Socket connected: tcp://${socket.remoteAddress}:${socket.remotePort}`
     );
-
-    const subscriber = (item: undefined | RemoteSocket) => {
-      if (typeof item === "undefined") {
-        socket.emit("close");
-      }
-    };
-
-    subject.subscribe(subscriber);
-
+    clients.push(socket);
     socket.on("close", () => {
-      subject.unsubscribe(subscriber);
-      socket.destroy();
+      clients.splice(clients.indexOf(socket), 1);
     });
 
     notify(wrapSocket(socket, log));
   });
   server.on("close", () => {
+    log("debug", `close() called on server`);
     close();
+    for (const idx in clients) {
+      clients[idx].destroy();
+    }
+    server.close(() => {
+      server.unref();
+    });
   });
   return new ServerTarget(handler);
 }

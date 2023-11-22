@@ -22,7 +22,7 @@ function getReadable(stream: Duplex) {
 function getWritable(socket: Duplex) {
   return createSubscriber<Buffer>({
     end() {
-      socket.emit("close");
+      socket.end();
     },
     data(item) {
       socket.write(item);
@@ -142,13 +142,8 @@ export default function wrapSocket(socket: Duplex, log: Log): SocketTarget {
   return new SocketTarget({
     ...handler,
     close: () => {
-      if (open) {
-        open = false;
-        log("debug", `close() called on stream`);
-        socket.emit("close");
-      } else {
-        log("debug", `Cannot call close() on stream, it isn't open`);
-      }
+      log("debug", `close() called on stream`);
+      socket.destroy();
     },
   });
 }
