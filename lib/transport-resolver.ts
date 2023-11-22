@@ -1,7 +1,7 @@
 import { ITransport } from "./transport";
 import socketIo from "./transport/socket-io";
 import tcp from "./transport/tcp";
-
+import websocket from "./transport/websocket";
 export function resolveTransport(
   settings: Record<string, object | string | number | boolean>
 ) {
@@ -15,6 +15,8 @@ export function getTransport(transport: string): ITransport {
   switch (transport) {
     case "socket.io":
       return socketIo;
+    case "websocket":
+      return websocket;
     case "tcp":
       return tcp;
   }
