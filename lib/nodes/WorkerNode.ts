@@ -61,6 +61,9 @@ export default class WorkerNode implements SocketNode {
     if (this.socket?.disconnect) {
       this.socket.disconnect();
     }
+    if (this.socket?.close) {
+      this.socket.close();
+    }
   }
 
   public connect(remoteHubAddress: string) {
