@@ -50,7 +50,15 @@ export default class HubNode implements SocketNode {
 
     const { socket: server, stop } = this.transport.listen(port, this);
 
-    this.terminationHandler = stop;
+    this.terminationHandler = () => {
+      stop();
+      if (server.close) {
+        server.close();
+      }
+      if (server.disconnect) {
+        server.disconnect();
+      }
+    };
 
     server.on("connection", (socket: RemoteSocket | undefined) => {
       if (!socket) {
