@@ -36,7 +36,7 @@ function connect(address: string, node: SocketNode): { socket: RemoteSocket } {
 
   return {
     socket: wrapSocket(
-      createConnection(Number(addr.port), addr.host),
+      createConnection(Number(addr.port), addr.hostname),
       node.log
     ),
   };
