@@ -27,7 +27,7 @@ const transport: ITransport = {
     return {
       socket: io(address, {
         autoConnect: true,
-        reconnection: true,
+        reconnection: false,
       }) as RemoteSocket,
     };
   },
