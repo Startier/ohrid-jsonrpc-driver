@@ -19,10 +19,12 @@ export type Emit<TKey extends string> =
   | EmitResponse<TKey>
   | EmitRequest<TKey>;
 
-type EmittableHandlers<TKey extends string> = (data: Emit<TKey>) => void;
+type EmittableHandlers<TKey extends string> = (
+  data: Emit<TKey> | undefined
+) => void;
 
 type ConnectionHandler<TKey> = TKey extends "connection"
-  ? (socket: RemoteSocket) => void
+  ? (socket: RemoteSocket | undefined) => void
   : never;
 
 type DisconnectHandler<TKey> = TKey extends "disconnect" ? () => void : never;

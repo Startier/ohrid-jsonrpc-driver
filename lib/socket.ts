@@ -67,7 +67,9 @@ export function handleSocket(
 
   const sub = createSubject<string>();
   socket.on("request", (data) => {
-    sub.notify(data);
+    if (data) {
+      sub.notify(data);
+    }
   });
 
   const jsonClient = client<{ [k: string]: any }>(
@@ -77,11 +79,15 @@ export function handleSocket(
 
         socket.emit("request", request);
 
-        yield await new Promise<string>((resolve) => {
-          const handler = (response: string) => {
+        yield await new Promise<string>((resolve, reject) => {
+          const handler = (response: string | undefined) => {
             instance.log("debug", `JSON-RPC [IN] Response: ${response}`);
 
-            resolve(response);
+            if (response) {
+              resolve(response);
+            } else {
+              reject(response);
+            }
             socket.off("response", handler);
           };
           socket.on("response", handler);

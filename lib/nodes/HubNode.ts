@@ -52,10 +52,15 @@ export default class HubNode implements SocketNode {
 
     this.terminationHandler = stop;
 
-    server.on("connection", (socket: RemoteSocket) => {
+    server.on("connection", (socket: RemoteSocket | undefined) => {
+      if (!socket) {
+        return;
+      }
       let currentInterface: NodeInterface | undefined = undefined;
 
-      socket.on("interface", ({ supportedMethods, name }) => {
+      socket.on("interface", (socketInterface) => {
+        if (!socketInterface) return;
+        const { supportedMethods, name } = socketInterface;
         if (currentInterface !== undefined) {
           throw new Error("Cannot redefine interface");
         }
