@@ -23,11 +23,13 @@ const transport: ITransport = {
     return { stop, socket: serverSocket };
   },
   connect(address: string): { socket: RemoteSocket } {
+    const socket = io(address, {
+      autoConnect: false,
+      reconnection: false,
+    });
+    socket.connect();
     return {
-      socket: io(address, {
-        autoConnect: true,
-        reconnection: false,
-      }) as RemoteSocket,
+      socket: socket as RemoteSocket,
     };
   },
 };
