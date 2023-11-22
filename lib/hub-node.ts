@@ -12,11 +12,10 @@ export const createHubNode: Driver["createNode"] = (
   const transport = resolveTransport(config.settings);
   const node = new HubNode(name, rpcMethods, log, transport);
 
-  const port = process.env.PORT
-    ? Number(process.env.PORT)
-    : typeof config.settings["port"] === "number"
-    ? config.settings["port"]
-    : undefined;
+  const port =
+    typeof config.settings["port"] === "number"
+      ? config.settings["port"]
+      : undefined;
 
   if (typeof port !== "number") {
     throw new Error("Port was not specified");
