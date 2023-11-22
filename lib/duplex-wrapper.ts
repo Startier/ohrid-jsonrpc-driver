@@ -39,22 +39,22 @@ function duplex(socket: Duplex, log: Log) {
   const writable = getWritable(socket);
 
   const handleRawString = createSubscriber<string>({
-    end() {},
+    end() {
+      socket.end();
+    },
     data(item) {
       switch (item.at(0)) {
         case "I":
-          log("debug", `Got interface packet:\n${item}`);
           interfaces.notify(JSON.parse(item.slice(1)));
           break;
         case "S":
-          log("debug", `Got response packet:\n${item}`);
           responses.notify(item.slice(1));
           break;
         case "Q":
-          log("debug", `Got request packet:\n${item}`);
           requests.notify(item.slice(1));
+          break;
         default:
-          log("debug", `Ignored invalid packet:\n${item}`);
+          log("warning", `Ignored invalid packet: ${JSON.stringify(item)}`);
           break;
       }
     },
@@ -90,21 +90,18 @@ function duplex(socket: Duplex, log: Log) {
     onInterface(item: Omit<RemoteNodeRef, "socket"> | undefined): void {
       if (item) {
         const packet = "I" + JSON.stringify(item) + "\n";
-        log("debug", `Sent interface packet:\n${packet}`);
         writable(Buffer.from(packet, "utf-8"));
       }
     },
     onResponse(item: string | undefined): void {
       if (item) {
         const packet = "S" + item + "\n";
-        log("debug", `Sent response packet:\n${packet}`);
         writable(Buffer.from(packet, "utf-8"));
       }
     },
     onRequest(item: string | undefined): void {
       if (item) {
         const packet = "Q" + item + "\n";
-        log("debug", `Sent request packet:\n${packet}`);
         writable(Buffer.from(packet, "utf-8"));
       }
     },
