@@ -12,10 +12,12 @@ import { Log } from "@startier/ohrid";
 function getReadable(stream: Duplex) {
   const readable = createSubject<Buffer>();
   stream.on("data", (chunk) => readable.notify(Buffer.from(chunk)));
-  stream.on("error", (e) => {
-    throw e;
+  stream.on("error", () => {
+    stream.emit("close");
   });
-  stream.on("end", () => {});
+  stream.on("end", () => {
+    stream.emit("close");
+  });
   return readable.subject;
 }
 
