@@ -4,8 +4,6 @@ export const handleDockerCompose: Driver["handleDockerCompose"] = async ({
   service,
   block,
   appendLine,
-  dockerServiceName,
-  store,
 }) => {
   let settings = Object.entries(service.settings ?? {});
   if (service.settings?.port) {
@@ -13,28 +11,6 @@ export const handleDockerCompose: Driver["handleDockerCompose"] = async ({
     await block(async () => {
       appendLine(`- "${service.settings?.port}:${service.settings?.port}"`);
     });
-  }
-  if (service.settings?.hub) {
-    if (store.hubImage) {
-      throw new Error("More than one hub was defined");
-    }
-    store.hubService = dockerServiceName;
-  } else {
-    if (store.hubService && store.hubPort) {
-      if (!settings.find((item) => item[0] === "remoteHub")) {
-        settings.push([
-          "remoteHub",
-          `http://${store.hubService}:${store.hubPort}`,
-        ]);
-      }
-    }
-
-    if (store.hubService) {
-      appendLine("depends_on:");
-      await block(async () => {
-        appendLine(`- ${store.hubService}`);
-      });
-    }
   }
 
   if (typeof service.settings?.environment === "object") {
@@ -57,15 +33,6 @@ export const handleDockerCompose: Driver["handleDockerCompose"] = async ({
       for (const [key, value] of settings) {
         if (key.startsWith("ENV:")) {
           appendLine(`${key.slice("ENV:".length)}: ${value}`);
-        }
-        switch (key) {
-          case "port":
-            appendLine(`PORT: ${value}`);
-            store.hubPort = value.toString();
-            break;
-          case "remoteHub":
-            appendLine(`REMOTE_HUB: ${value}`);
-            break;
         }
       }
     });
