@@ -111,6 +111,11 @@ function duplex(socket: Duplex, log: Log) {
     responses: responses.subject,
     requests: requests.subject,
     interfaces: interfaces.subject,
+    close() {
+      requests.close();
+      responses.close();
+      interfaces.close();
+    },
   };
 }
 
@@ -119,11 +124,6 @@ export default function wrapSocket(socket: Duplex, log: Log): SocketTarget {
   const disconnects = createSubject<void>();
 
   let open = false;
-
-  socket.on("close", () => {
-    open = false;
-    disconnects.notify();
-  });
 
   socket.on("connect", () => {
     open = true;
@@ -137,6 +137,11 @@ export default function wrapSocket(socket: Duplex, log: Log): SocketTarget {
     ...duplexHandler,
   };
 
+  socket.on("close", () => {
+    open = false;
+    disconnects.notify();
+    duplexHandler.close();
+  });
   return new SocketTarget({
     ...handler,
     close: () => {
