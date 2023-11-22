@@ -29,10 +29,10 @@ type DisconnectHandler<TKey> = TKey extends "disconnect" ? () => void : never;
 type ConnectHandler<TKey> = TKey extends "connect" ? () => void : never;
 
 export type Handler<TKey extends string> =
-  | EmittableHandlers<TKey>
   | ConnectionHandler<TKey>
   | DisconnectHandler<TKey>
-  | ConnectHandler<TKey>;
+  | ConnectHandler<TKey>
+  | EmittableHandlers<TKey>;
 
 export interface ITransport {
   connect: (address: string, node: SocketNode) => { socket: RemoteSocket };
