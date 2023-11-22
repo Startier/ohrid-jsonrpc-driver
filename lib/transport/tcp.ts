@@ -11,7 +11,14 @@ function wrapServer(server: Server, log: Log): ServerTarget {
   const clients: Socket[] = [];
   const handler: ServerTargetHandler = {
     close() {
-      server.close();
+      log("debug", `close() called on server`);
+
+      for (const idx in clients) {
+        clients[idx].destroy();
+      }
+      server.close(() => {
+        server.unref();
+      });
     },
     connections: subject,
   };
@@ -26,16 +33,6 @@ function wrapServer(server: Server, log: Log): ServerTarget {
     });
 
     notify(wrapSocket(socket, log));
-  });
-  server.on("close", () => {
-    log("debug", `close() called on server`);
-    close();
-    for (const idx in clients) {
-      clients[idx].destroy();
-    }
-    server.close(() => {
-      server.unref();
-    });
   });
   return new ServerTarget(handler);
 }
