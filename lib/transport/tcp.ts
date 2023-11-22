@@ -46,11 +46,15 @@ function connect(address: string, node: SocketNode): { socket: RemoteSocket } {
     throw 1;
   }
 
+  const connection = createConnection(Number(addr.port), addr.hostname);
+
+  connection.on("close", () => {
+    if (!node.context.exit) {
+      connection.connect(Number(addr.port), addr.hostname);
+    }
+  });
   return {
-    socket: wrapSocket(
-      createConnection(Number(addr.port), addr.hostname),
-      node.log
-    ),
+    socket: wrapSocket(connection, node.log),
   };
 }
 
