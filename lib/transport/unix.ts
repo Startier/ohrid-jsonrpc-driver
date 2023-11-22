@@ -22,10 +22,7 @@ function wrapServer(server: Server, log: Log): ServerTarget {
     connections: subject,
   };
   server.on("connection", (socket) => {
-    log(
-      "debug",
-      `Socket connected: tcp://${socket.remoteAddress}:${socket.remotePort}`
-    );
+    log("debug", `Socket connected`);
     clients.push(socket);
     socket.on("close", () => {
       clients.splice(clients.indexOf(socket), 1);
@@ -40,13 +37,7 @@ function wrapServer(server: Server, log: Log): ServerTarget {
 }
 
 function connect(address: string, node: SocketNode): { socket: RemoteSocket } {
-  const addr = new URL(address);
-  if (addr.protocol !== "tcp:") {
-    node.log("error", `Invalid protocol, only tcp is supported`);
-    throw 1;
-  }
-
-  const connection = createConnection(Number(addr.port), addr.hostname);
+  const connection = createConnection(address);
 
   return {
     socket: wrapSocket(connection, node.log),
@@ -54,15 +45,15 @@ function connect(address: string, node: SocketNode): { socket: RemoteSocket } {
 }
 
 function listen(
-  { port }: { port?: number; address?: string },
+  { address }: { port?: number; address?: string },
   node: SocketNode
 ): { socket: RemoteSocket; stop: () => void } {
-  if (typeof port !== "number") {
-    throw new Error("Invalid port");
+  if (typeof address !== "string") {
+    throw new Error("Invalid path");
   }
   const server = createServer();
-  server.listen(port, () => {
-    node.log("info", `Hub server is running on port: ${port}`);
+  server.listen(address, () => {
+    node.log("info", `Hub server is running on unix socket: ${address}`);
   });
   return {
     socket: wrapServer(server, node.log),

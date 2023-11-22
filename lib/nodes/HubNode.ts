@@ -45,10 +45,10 @@ export default class HubNode implements SocketNode {
     this.terminationHandler();
   }
 
-  public listen(port: number): void {
+  public listen(listenConfig: { port?: number; address?: string }): void {
     this.terminate();
 
-    const { socket: server, stop } = this.transport.listen(port, this);
+    const { socket: server, stop } = this.transport.listen(listenConfig, this);
 
     this.terminationHandler = () => {
       stop();

@@ -39,7 +39,7 @@ export type Handler<TKey extends string> =
 export interface ITransport {
   connect: (address: string, node: SocketNode) => { socket: RemoteSocket };
   listen: (
-    port: number,
+    data: { port?: number; address?: string },
     node: SocketNode
   ) => { socket: RemoteSocket; stop: () => void };
 }

@@ -6,9 +6,12 @@ import { io } from "socket.io-client";
 
 const transport: ITransport = {
   listen(
-    port: number,
+    { port }: { port?: number; address?: string },
     node: SocketNode
   ): { socket: RemoteSocket; stop: () => void } {
+    if (typeof port !== "number") {
+      throw new Error("Invalid port");
+    }
     const httpServer = createServer();
     const serverSocket = new Server(httpServer);
     httpServer.listen(port, () => {

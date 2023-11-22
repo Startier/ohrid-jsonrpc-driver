@@ -17,11 +17,12 @@ export const createHubNode: Driver["createNode"] = (
       ? config.settings["port"]
       : undefined;
 
-  if (typeof port !== "number") {
-    throw new Error("Port was not specified");
-  }
+  const address =
+    typeof config.settings["address"] === "string"
+      ? config.settings["address"]
+      : undefined;
 
-  node.listen(port);
+  node.listen({ port, address });
 
   return node.context;
 };

@@ -37,9 +37,13 @@ function wrapServerSocket(server: Server, log: Log) {
 
 const transport: ITransport = {
   listen(
-    port: number,
+    { port }: { port?: number; address?: string },
     node: SocketNode
   ): { socket: RemoteSocket; stop: () => void } {
+    if (typeof port !== "number") {
+      throw new Error("Invalid port");
+    }
+
     const httpServer = createServer();
     const serverSocket = new Server({ server: httpServer });
     httpServer.listen(port, () => {
