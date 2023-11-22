@@ -4,8 +4,9 @@ import { ITransport, RemoteSocket } from "../transport";
 import ServerTarget, { ServerTargetHandler } from "../targets/ServerTarget";
 import { createSubject } from "@mojsoski/streams";
 import wrapSocket from "../duplex-wrapper";
+import { Log } from "@startier/ohrid";
 
-function wrapServer(server: Server): ServerTarget {
+function wrapServer(server: Server, log: Log): ServerTarget {
   const { subject, notify, close } = createSubject<RemoteSocket>();
   const handler: ServerTargetHandler = {
     close() {
@@ -14,7 +15,11 @@ function wrapServer(server: Server): ServerTarget {
     connections: subject,
   };
   server.on("connection", (socket) => {
-    notify(wrapSocket(socket));
+    log(
+      "debug",
+      `Socket connected: tcp://${socket.remoteAddress}:${socket.remotePort}`
+    );
+    notify(wrapSocket(socket, log));
   });
   server.on("close", () => {
     close();
@@ -24,13 +29,16 @@ function wrapServer(server: Server): ServerTarget {
 
 function connect(address: string, node: SocketNode): { socket: RemoteSocket } {
   const addr = new URL(address);
-  if (addr.protocol !== "tcp") {
+  if (addr.protocol !== "tcp:") {
     node.log("error", `Invalid protocol, only tcp is supported`);
     throw 1;
   }
 
   return {
-    socket: wrapSocket(createConnection(Number(addr.port), addr.host)),
+    socket: wrapSocket(
+      createConnection(Number(addr.port), addr.host),
+      node.log
+    ),
   };
 }
 
@@ -43,7 +51,7 @@ function listen(
     node.log("info", `Hub server is running on port: ${port}`);
   });
   return {
-    socket: wrapServer(server),
+    socket: wrapServer(server, node.log),
     stop: () => server.close(),
   };
 }
