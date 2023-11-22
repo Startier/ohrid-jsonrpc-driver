@@ -19,6 +19,20 @@ function wrapServer(server: Server, log: Log): ServerTarget {
       "debug",
       `Socket connected: tcp://${socket.remoteAddress}:${socket.remotePort}`
     );
+
+    const subscriber = (item: undefined | RemoteSocket) => {
+      if (typeof item === "undefined") {
+        socket.emit("close");
+      }
+    };
+
+    subject.subscribe(subscriber);
+
+    socket.on("close", () => {
+      subject.unsubscribe(subscriber);
+      socket.destroy();
+    });
+
     notify(wrapSocket(socket, log));
   });
   server.on("close", () => {
