@@ -7,6 +7,7 @@ import {
   createSubject,
   createSubscriber,
 } from "@mojsoski/streams";
+import { Log } from "@startier/ohrid";
 
 function getReadable(stream: Duplex) {
   const readable = createSubject<Buffer>();
@@ -27,7 +28,7 @@ function getWritable(socket: Duplex) {
   });
 }
 
-function duplex(socket: Duplex) {
+function duplex(socket: Duplex, log: Log) {
   const responses = createSubject<string>();
   const requests = createSubject<string>();
   const interfaces = createSubject<Omit<RemoteNodeRef, "socket">>();
@@ -36,21 +37,22 @@ function duplex(socket: Duplex) {
   const writable = getWritable(socket);
 
   const handleRawString = createSubscriber<string>({
-    end() {
-      socket.emit("close");
-    },
+    end() {},
     data(item) {
       switch (item.at(0)) {
         case "I":
+          log("debug", `Got interface packet:\n${item}`);
           interfaces.notify(JSON.parse(item.slice(1)));
           break;
         case "S":
+          log("debug", `Got response packet:\n${item}`);
           responses.notify(item.slice(1));
           break;
         case "Q":
+          log("debug", `Got request packet:\n${item}`);
           requests.notify(item.slice(1));
         default:
-          socket.emit("close");
+          log("debug", `Ignored invalid packet:\n${item}`);
           break;
       }
     },
@@ -85,60 +87,64 @@ function duplex(socket: Duplex) {
   return {
     onInterface(item: Omit<RemoteNodeRef, "socket"> | undefined): void {
       if (item) {
-        writable(Buffer.from("I" + JSON.stringify(item) + "\n", "utf-8"));
+        const packet = "I" + JSON.stringify(item) + "\n";
+        log("debug", `Sent interface packet:\n${packet}`);
+        writable(Buffer.from(packet, "utf-8"));
       }
     },
     onResponse(item: string | undefined): void {
       if (item) {
-        writable(Buffer.from("S" + item + "\n", "utf-8"));
+        const packet = "S" + item + "\n";
+        log("debug", `Sent response packet:\n${packet}`);
+        writable(Buffer.from(packet, "utf-8"));
       }
     },
     onRequest(item: string | undefined): void {
       if (item) {
-        writable(Buffer.from("Q" + item + "\n", "utf-8"));
+        const packet = "Q" + item + "\n";
+        log("debug", `Sent request packet:\n${packet}`);
+        writable(Buffer.from(packet, "utf-8"));
       }
     },
     responses: responses.subject,
     requests: requests.subject,
     interfaces: interfaces.subject,
-    close() {
-      requests.close();
-      responses.close();
-      interfaces.close();
-    },
   };
 }
 
-export default function wrapSocket(socket: Duplex): SocketTarget {
+export default function wrapSocket(socket: Duplex, log: Log): SocketTarget {
   const connects = createSubject<void>();
   const disconnects = createSubject<void>();
 
-  socket.on("end", () => {
+  let open = false;
+
+  socket.on("close", () => {
+    open = false;
     disconnects.notify();
   });
 
   socket.on("connect", () => {
+    open = true;
     connects.notify();
-    close;
   });
 
-  const duplexHandler = duplex(socket);
+  const duplexHandler = duplex(socket, log);
   const handler = {
     connects: connects.subject,
     disconnects: disconnects.subject,
     ...duplexHandler,
   };
 
-  socket.on("close", () => {
-    connects.close();
-    disconnects.close();
-    duplexHandler.close();
-  });
-
   return new SocketTarget({
     ...handler,
     close: () => {
-      socket.emit("close");
+      if (open) {
+        open = false;
+        log("debug", `close() called on stream`);
+        socket.emit("close");
+      } else {
+        log("debug", `Cannot call close() on stream, it isn't open`);
+      }
     },
   });
 }
