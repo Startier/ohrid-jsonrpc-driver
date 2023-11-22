@@ -1,7 +1,7 @@
 {
   "name": "@startier/ohrid-jsonrpc-driver",
   "version": "1.1.0",
-  "description": "A driver for @startier/ohrid that uses JSON-RPC 2.0 and socket.io for remote calls",
+  "description": "A driver for @startier/ohrid that resolves method calls with a server/client architecture using JSON-RPC 2.0 for communication",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "keywords": [],
