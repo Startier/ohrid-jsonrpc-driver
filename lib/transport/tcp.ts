@@ -48,14 +48,6 @@ function connect(address: string, node: SocketNode): { socket: RemoteSocket } {
 
   const connection = createConnection(Number(addr.port), addr.hostname);
 
-  connection.on("close", () => {
-    if (!node.context.exit) {
-      setTimeout(
-        () => connection.connect(Number(addr.port), addr.hostname),
-        500
-      );
-    }
-  });
   return {
     socket: wrapSocket(connection, node.log),
   };
