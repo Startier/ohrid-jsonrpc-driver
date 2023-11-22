@@ -15,9 +15,7 @@ function getReadable(stream: Duplex) {
   stream.on("error", () => {
     stream.emit("close");
   });
-  stream.on("end", () => {
-    stream.emit("close");
-  });
+  stream.on("end", () => {});
   return readable.subject;
 }
 
